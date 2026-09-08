@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바이브 코딩 강의 — AI에게 화면을 보여주면, 웹앱이 완성됩니다</title>
+<meta name="description" content="코드를 몰라도 괜찮습니다. 원하는 화면을 클로드에게 보여주고 요청하는 것만으로 나만의 웹앱을 만들고, 구글 시트와 연동한 뒤 깃허브에 배포하는 법을 순서대로 배웁니다.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg: #f2f4f8;
+    --card: #ffffff;
+    --border: #e5e8f0;
+    --text: #1c2130;
+    --text-dim: #6b7280;
+    --text-faint: #9aa1ae;
+    --blue: #2f5fe0;
+    --blue-dark: #2249c0;
+    --blue-tint: #eaf0ff;
+    --green: #17a34a;
+    --green-dark: #128a3e;
+    --green-tint: #e8f8ee;
+    --radius-lg: 18px;
+    --radius-md: 10px;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code{
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    background: #f1f2f6;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.08em 0.4em;
+    font-size: 0.87em;
+    color: var(--blue-dark);
+  }
+
+  :focus-visible{
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* ---------- header ---------- */
+  header.top{
+    background: #fff;
+    padding: 44px 20px 30px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  header.top h1{
+    margin: 0 0 10px;
+    font-size: 27px;
+    font-weight: 900;
+    color: var(--blue-dark);
+    letter-spacing: -0.01em;
+  }
+  header.top p{
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 14.5px;
+  }
+
+  /* ---------- tab nav ---------- */
+  .tabs-wrap{
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+  }
+  .tabs{
+    max-width: 880px;
+    margin: 0 auto;
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tabs a{
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 9px 16px;
+    border-radius: 999px;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .tabs a:hover{
+    background: var(--blue-tint);
+    border-color: #c7d6fb;
+    color: var(--blue-dark);
+  }
+
+  /* ---------- layout ---------- */
+  main{
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 20px 90px;
+  }
+
+  /* ---------- card ---------- */
+  .card{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 1px 2px rgba(20,25,40,0.03), 0 6px 20px rgba(20,25,40,0.045);
+    padding: 30px 32px 12px;
+    margin-bottom: 26px;
+    scroll-margin-top: 78px;
+  }
+  .card-head{
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-bottom: 18px;
+  }
+  .badge{
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card-head h2{
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .card-divider{
+    height: 1px;
+    background: var(--border);
+    margin-bottom: 6px;
+  }
+
+  /* ---------- item row ---------- */
+  .item{
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .item:last-child{ border-bottom: none; }
+  .item-main{ flex: 1; min-width: 0; }
+  .item-title{
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tag{
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--blue-dark);
+    background: var(--blue-tint);
+    border-radius: 6px;
+    padding: 2px 8px;
+  }
+  .item-desc{
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 14px;
+    max-width: 62ch;
+  }
+  .item-desc + .item-desc{ margin-top: 6px; }
+  .item ul{
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: var(--text-dim);
+    font-size: 13.8px;
+  }
+  .item ul li{ margin-bottom: 6px; }
+
+  .item-actions{
+    flex: none;
+    display: flex;
+    gap: 8px;
+    padding-top: 1px;
+  }
+  .btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 9px 15px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .btn-blue{ background: var(--blue); color: #fff; }
+  .btn-blue:hover{ background: var(--blue-dark); }
+  .btn-green{ background: var(--green); color: #fff; }
+  .btn-green:hover{ background: var(--green-dark); }
+  .btn-outline{
+    background: #fff;
+    color: var(--text-dim);
+    border-color: var(--border);
+  }
+  .btn-outline:hover{ color: var(--text); border-color: #c7ccd6; }
+
+  /* ---------- preview (details/summary) ---------- */
+  details.preview{ margin-top: 12px; }
+  details.preview summary{
+    cursor: pointer;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blue-dark);
+  }
+  details.preview summary::-webkit-details-marker{ display:none; }
+  details.preview summary::after{
+    content: "화면 미리보기 ▾";
+  }
+  details.preview[open] summary::after{
+    content: "화면 접기 ▴";
+  }
+  details.preview .frame{
+    margin-top: 12px;
+    max-width: 380px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .frame-bar{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: #f6f7fa;
+    border-bottom: 1px solid var(--border);
+  }
+  .frame-dots{ display:flex; gap:5px; }
+  .frame-dots span{ width:7px; height:7px; border-radius:50%; background: #d7dae2; }
+  .frame-url{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 8px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  details.preview img{ display:block; width: 100%; height: auto; }
+
+  /* ---------- prompt box ---------- */
+  .promptbox{
+    margin-top: 12px;
+    background: #f8f9fb;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .promptbox pre{
+    margin: 0;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #3a3f4d;
+    white-space: pre-wrap;
+    word-break: keep-all;
+  }
+  .promptbox .k{ color: var(--blue-dark); font-weight: 700; }
+
+  .callout{
+    margin-top: 12px;
+    background: var(--blue-tint);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 13px;
+    color: #33415e;
+    display:flex;
+    gap: 8px;
+  }
+  .callout b{ color: var(--blue-dark); }
+
+  footer{
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 13px;
+    padding-bottom: 40px;
+  }
+
+  @media (max-width: 640px){
+    header.top{ padding: 34px 16px 24px; }
+    header.top h1{ font-size: 21px; }
+    .card{ padding: 22px 18px 8px; }
+    .item{ flex-direction: column; }
+    .item-actions{ padding-top: 4px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>🚀 코드 몰라도 되는 바이브 코딩 강의</h1>
+  <p>AI에게 화면을 보여주고 요청하는 것만으로 나만의 웹앱을 만드는 법</p>
+</header>
+
+<div class="tabs-wrap">
+  <nav class="tabs">
+    <a href="#part1">1. 간단 버전 테스트</a>
+    <a href="#part2">2. 시트 연동 테스트</a>
+    <a href="#part3">3. 링크 줄이기</a>
+  </nav>
+</div>
+
+<main>
+
+  <section class="card" id="part1">
+    <div class="card-head">
+      <span class="badge">1</span>
+      <h2>간단 버전 테스트</h2>
+    </div>
+    <div class="card-divider"></div>
+
+    <div class="item">
+      <div class="item-main">
+        <div class="item-title">🚀 완성 샘플 확인하기 <span class="tag">먼저 열어보기</span></div>
+        <p class="item-desc">바이브 코딩으로 실제 완성한 하루 루틴 앱입니다. 달력에서 날짜를 고르고 하루를 기록하는 간단한 앱이에요.</p>
+        <details class="preview">
+          <summary></summary>
+          <div class="frame">
+            <div class="frame-bar">
+              <div class="frame-dots"><span></span><span></span><span></span></div>
+              <div class="frame-url">stringweek-cyber.github.io/routine</div>
+            </div>
+            <img src="images/sample-app.png" alt="바이브 코딩으로 만든 하루 루틴 샘플 앱 화면">
+          </div>
+        </details>
+      </div>
+      <div class="item-actions">
+        <a class="btn btn-blue" href="https://stringweek-cyber.github.io/routine/" target="_blank" rel="noopener">샘플 보기</a>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-main">
+        <div class="item-title">🤖 클로드에게 원하는 화면 보여주기</div>
+        <p class="item-desc">만들고 싶은 화면이나 참고할 사이트를 캡처해서 클로드에 붙여넣으세요. "이 화면처럼 구글 앱스 스크립트(GAS)로 만들어줘"라고 요청하면 바로 코드를 받을 수 있어요.</p>
+      </div>
+      <div class="item-actions">
+        <a class="btn btn-outline" href="https://claude.ai" target="_blank" rel="noopener">클로드 이동</a>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-main">
+        <div class="item-title">📦 <code>code.gs</code> · <code>index.html</code> 저장하고 배포하기 <span class="tag">대소문자 주의</span></div>
+        <ul>
+          <li>Apps Script 프로젝트를 새로 만들고, 클로드가 준 코드를 <code>code.gs</code>와 <code>index.html</code> 두 파일에 각각 붙여넣으세요. 파일 이름의 대소문자를 정확히 맞춰야 합니다.</li>
+          <li>처음 배포할 때는 <code>새 배포</code>를 눌러 새로운 웹앱 주소를 발급받으세요.</li>
+          <li>코드를 수정한 뒤에는 <code>배포관리</code>에서 버전만 올려야 기존 주소가 그대로 유지돼요. <code>새 배포</code>를 다시 누르면 주소가 새로 생성되니 주의하세요.</li>
+        </ul>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="card" id="part2">
+    <div class="card-head">
+      <span class="badge">2</span>
+      <h2>시트 연동 테스트</h2>
+    </div>
+    <div class="card-divider"></div>
+
+    <div class="item">
+      <div class="item-main">
+        <div class="item-title">📄 시트 서식 복사하기</div>
+        <p class="item-desc">아래 샘플 시트를 내 계정으로 복사해서 사용하세요. 연번, 성명, 서명 열이 이미 만들어져 있어요.</p>
+        <details class="preview">
+          <summary></summary>
+          <div class="frame">
+            <div class="frame-bar">
+              <div class="frame-dots"><span></span><span></span><span></span></div>
+              <div class="frame-url">docs.google.com/spreadsheets/…</div>
+            </div>
+            <img src="images/sample-sheet.png" alt="바이브코딩_샘플시트 화면 — 연번, 성명, 서명 열이 있는 시트1">
+          </div>
+        </details>
+        <p class="item-desc" style="margin-top:8px;">시트를 열었으면 <code>파일 › 사본 만들기</code>로 내 계정에 복사한 뒤 사용하세요.</p>
+      </div>
+      <div class="item-actions">
+        <a class="btn btn-blue" href="https://docs.google.com/spreadsheets/d/1e42NI_oZ11M5yEEJ3cugJPjnZnBtNwEsCJBmWwWyJBU/edit?gid=0#gid=0" target="_blank" rel="noopener">시트 열기</a>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-main">
+        <div class="item-title">📋 프롬프트 작성하기 <span class="tag">셀 이름이 중요해요</span></div>
+        <p class="item-desc">GAS 코드가 시트의 어느 칸을 읽고 쓸지 정확히 알려줘야 해요. 시트 이름, 헤더 위치, 열 이름을 프롬프트에 구체적으로 적어주세요. 아래 프롬프트를 내 시트에 맞게 고쳐서 사용하면 됩니다.</p>
+        <div class="promptbox">
+          <pre id="promptText"><span class="k">[시트 정보]</span>
+- 시트 이름: 시트1
+- 3행: 헤더 (A=연번, B=성명, C=서명)
+- 4행부터 이름 데이터가 있음
+
+<span class="k">[기능]</span>
+1. 메인 페이지에 서명자 이름 목록이 나오고, 이름을 누르면 서명할 수 있어야 해.
+2. 서명하면 해당 이름의 C열(서명)에 서명 내용이 자동으로 기록돼야 해.
+3. 메인 페이지 우측 상단에 삼줄(≡) 메뉴 버튼을 만들어줘. 누르면 [서명지 만들기], [서명지 출력하기] 두 메뉴가 나와야 해.
+4. [서명지 만들기]: 연수명과 날짜를 입력하면, 기존 시트1을 복사해서 새 시트(예: 연수명_날짜)를 만들고, 그 시트를 메인 페이지에서 바로 볼 수 있어야 해.
+5. [서명지 출력하기]: 지금까지 만든 연수명 목록을 보여주고, 하나를 선택하면 해당 연수의 서명 시트를 불러와서 출력할 수 있어야 해.
+
+code.gs와 index.html 두 파일로 나눠서 작성해줘.</pre>
+        </div>
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-green" onclick="copyPrompt('promptText', this)">프롬프트 복사</button>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-main">
+        <div class="item-title">🚀 배포하기</div>
+        <p class="item-desc">Part 1의 3단계와 같은 방법이에요. <code>code.gs</code>와 <code>index.html</code>에 코드를 붙여넣고, 처음에는 <code>새 배포</code>로 주소를 발급받은 뒤 수정할 때마다 <code>배포관리</code>에서 버전만 올리세요. 배포 후에는 실제로 서명을 하나 남겨서 시트에 잘 기록되는지 꼭 확인하세요.</p>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="card" id="part3">
+    <div class="card-head">
+      <span class="badge">3</span>
+      <h2>웹앱 주소 짧게 바꾸기</h2>
+    </div>
+    <div class="card-divider"></div>
+
+    <div class="item">
+      <div class="item-main">
+        <div class="item-title">🔗 joo.is에서 계정 만들기</div>
+        <p class="item-desc">joo.is에 접속해서 회원가입 후 로그인하세요.</p>
+      </div>
+      <div class="item-actions">
+        <a class="btn btn-blue" href="https://joo.is" target="_blank" rel="noopener">joo.is 이동</a>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="item-main">
+        <div class="item-title">✂️ 원본 주소를 짧은 링크로 바꾸기 <span class="tag">무료 50개</span></div>
+        <p class="item-desc">단축 링크 만들기 메뉴에서 배포된 웹앱의 원본 주소(긴 주소)를 붙여넣고, 원하는 이름을 정하면 <code>joo.is/원하는이름</code> 형태의 짧은 주소가 만들어져요. 이 주소를 학생이나 동료 선생님에게 공유하세요.</p>
+        <div class="callout">
+          <span>💡</span>
+          <span><b>무료 계정은 링크를 최대 50개까지</b> 만들 수 있어요. 자주 쓰는 링크 위주로 아껴서 사용하세요.</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<footer>이 페이지는 바이브 코딩으로 만들었습니다.</footer>
+
+<script>
+  function copyPrompt(id, btn){
+    var text = document.getElementById(id).innerText;
+    navigator.clipboard.writeText(text).then(function(){
+      var original = btn.textContent;
+      btn.textContent = '복사됨 ✓';
+      setTimeout(function(){ btn.textContent = original; }, 1600);
+    });
+  }
+</script>
+
+</body>
+</html>
